@@ -313,7 +313,6 @@
             }
         }
         
-        /* (تأثير جديد: نبض نص معلومات اللاعب) */
         .game-info-pulse {
             animation: pulse-info-text 1.5s infinite ease-in-out;
         }
@@ -332,9 +331,72 @@
             }
         }
 
+        /* (جديد: زر المساعدة العائم) */
+        .help-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background-color: #334155;
+            color: #e2e8f0;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 1px solid #475569;
+            font-size: 1.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .help-btn:hover {
+            background-color: #475569;
+            transform: scale(1.1);
+        }
+
+        /* (جديد: تنسيق نافذة الشرح) */
+        .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+            text-align: right;
+            padding: 0 1rem;
+        }
+        .modal-body h2 {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--color-blue-light);
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 0.5rem;
+        }
+        .modal-body p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        .modal-body ul {
+            list-style-type: disc;
+            margin-right: 2rem;
+            margin-bottom: 1rem;
+        }
+        .modal-body li {
+            margin-bottom: 0.5rem;
+        }
+        .modal-body strong {
+            color: #fde047; /* (لون أصفر مميز للكلمات المهمة) */
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200"> 
+
+    <!-- (جديد: زر المساعدة) -->
+    <button id="help-btn" class="help-btn">؟</button>
 
     <div id="toast-container"></div>
 
@@ -362,7 +424,6 @@
         </div>
 
         <div id="game-screen" class="hidden flex flex-col items-center w-full">
-            <!-- (تعديل: إزالة الكلاسات الثابتة من هنا) -->
             <div id="game-info"></div> 
             <div id="score-board" class="score-board"></div>
             <div id="board" class="grid-container mb-4"></div>
@@ -407,6 +468,19 @@
                 <button id="win-restart-btn" class="px-8 py-3 text-lg font-bold text-green-700 bg-white rounded-full shadow-lg hover:bg-gray-100 transform hover:scale-105 transition duration-300">إعادة اللعبة</button>
                 <button id="win-close-btn" class="px-8 py-3 text-lg font-bold text-slate-800 bg-slate-200 rounded-full shadow-lg hover:bg-slate-300 transform hover:scale-105 transition duration-300">العودة للساحة</button>
             </div>
+        </div>
+    </div>
+
+    <!-- (جديد: نافذة شرح اللعبة) -->
+    <div id="how-to-play-modal" class="modal">
+        <div class="modal-content max-w-2xl"> 
+            <h1 class="text-3xl font-bold mb-4 text-gradient">شرح اللعبة</h1>
+            <div id="how-to-play-body" class="modal-body">
+                <!-- سيتم ملء هذا المحتوى بواسطة جافاسكربت -->
+            </div>
+            <button id="how-to-play-close-btn" class="mt-6 px-8 py-3 text-lg font-bold text-white bg-gradient-to-r from-blue-500 to-blue-700 rounded-full shadow-lg hover:from-blue-600 hover:to-blue-800 transform hover:scale-105 transition duration-300">
+                فهمت، لنبدأ!
+            </button>
         </div>
     </div>
 
@@ -459,6 +533,12 @@
         const winnerNameText = document.getElementById('winner-name');
         const winRestartBtn = document.getElementById('win-restart-btn');
         const winCloseBtn = document.getElementById('win-close-btn'); 
+
+        // (جديد: عناصر نافذة الشرح)
+        const helpBtn = document.getElementById('help-btn');
+        const howToPlayModal = document.getElementById('how-to-play-modal');
+        const howToPlayBody = document.getElementById('how-to-play-body');
+        const howToPlayCloseBtn = document.getElementById('how-to-play-close-btn');
 
         const colorMap = {
             'yellow': 'taken-yellow',
@@ -573,14 +653,14 @@
             {"question":"ما عدة الأرملة غير الحامل؟", "options": ["4 أشهر و7 أيام", "5 أشهر", "4 أشهر", "4 أشهر و10 أيام"], "correctAnswer": "4 أشهر و10 أيام"},
             {"question":"من هي الصحابية ذات النطاقين؟", "options": ["أم حارثة", "عائشة", "أسماء بنت عمير", "أسماء بنت أبي بكر"], "correctAnswer": "أسماء بنت أبي بكر"},
             {"question":"من الصحابي الذي استمعت إليه الملائكة وهو يقرأ البقرة؟", "options": ["زيد بن سهل", "أبو العاص بن الربيع", "حكيم بن حزام", "أسيد بن حضير"], "correctAnswer": "أسيد بن حضير"},
-            {"question":"من صاحب كتاب \"طوق الحمامة\"؟", "options": ["المتنبي", "ابن حجر", "ابن طفيل", "ابن حزم الأندلسي"], "correctAnswer": "ابن حزم الأندL"},
+            {"question":"من صاحب كتاب \"طوق الحمامة\"؟", "options": ["المتنبي", "ابن حجر", "ابن طفيل", "ابن حزم الأندلسي"], "correctAnswer": "ابن حزم الأندل"},
             {"question":"من صاحب كتاب \"حي بن يقظان\"؟", "options": ["ابن خلدون", "الجاحظ", "ابن رشد", "ابن طفيل"], "correctAnswer": "ابن طفيل"},
             {"question":"ما هو الإعجاز القرآني في \"بلى قادرين على أن نسوي بنانه\"؟", "options": ["خلق الأصابع", "تحريك الأصابع", "تطابق الأصابع", "اختلاف بصمات الأصابع"], "correctAnswer": "اختلاف بصمات الأصابع"},
             {"question":"ماذا تسمى الباء في \"هذا بذاك فما ملام عليك\"؟", "options": ["باء من الكلمة", "باء الجر", "باء العطف", "باء البدل"], "correctAnswer": "باء العطف"},
             {"question":"أكمل: كالمستجير من الرمضاء …؟", "options": ["بالظل", "بالحر", "باللهب", "بالنار"], "correctAnswer": "بالنار"},
             {"question":"أكمل: على أهلها جنت …؟", "options": ["هند", "سماء", "ليلى", "براقش"], "correctAnswer": "براقش"},
             {"question":"ما أول دولة استخدمت طوابع البريد؟", "options": ["اليابان", "النمسا", "الهند", "بريطانيا"], "correctAnswer": "بريطانيا"},
-            {"question":"أي مدينة تسمى دار السلام؟", "options": ["القدس", "حيفا", "دمشق", "بغداد"], "correctAnswer": "بغداد"},
+            {"question":"أي مدينة تسمى دار السلام؟", "options": ["القدس", "حيفا", "دمشق", " بغداد"], "correctAnswer": " بغداد"},
             {"question":"ما هو أبعد كوكب عن الشمس؟", "options": ["الزهرة", "المشتري", "عطارد", "بلوتو"], "correctAnswer": "بلوتو"},
             {"question":"ما اسم الخنساء؟", "options": ["ماوية", "ليلى الأخيلية", "هند بنت عمرو", "تماضر بنت عمرو"], "correctAnswer": "تماضر بنت عمرو"},
             {"question":"أكمل القاعدة: درء المفاسد مقدم على …؟", "options": ["العلوم", "المنافع", "الإتيان بالفوائد", "جلب المنافع"], "correctAnswer": "جلب المنافع"},
@@ -785,6 +865,7 @@
         
         function changeColor(teamIndex, direction) {
             const selectedColors = teamColors.filter((c, i) => i !== teamIndex && c !== null);
+            // (تعديل: إضافة null هنا لحل مشكلة التوقف التام)
             const availablePickerColors = [null, ...availableColors.filter(c => !selectedColors.includes(c))];
 
             const currentColor = teamColors[teamIndex];
@@ -809,6 +890,14 @@
         winRestartBtn.addEventListener('click', restartGame);
         winCloseBtn.addEventListener('click', () => { 
             winModal.style.display = 'none';
+        });
+
+        // (جديد: مستمعات نافذة الشرح)
+        helpBtn.addEventListener('click', () => {
+            howToPlayModal.style.display = 'flex';
+        });
+        howToPlayCloseBtn.addEventListener('click', () => {
+            howToPlayModal.style.display = 'none';
         });
 
         teamCountSelect.addEventListener('change', (e) => {
@@ -1207,7 +1296,6 @@
             if (!gameStarted) return;
             const currentPlayer = teams[currentPlayerIndex];
             
-            // (تعديل: إضافة الكلاسات والأنماط الجديدة للنبض)
             gameInfo.className = 'mb-4 w-full text-center text-2xl font-bold game-info-pulse'; 
             gameInfo.textContent = `دور الفريق: ${currentPlayer.name}`;
             gameInfo.style.color = `var(--color-${currentPlayer.color}-light)`;
@@ -1264,8 +1352,48 @@
             return array;
         }
 
+        // (جديد: وظيفة لملء نافذة الشرح بالمحتوى المنسق)
+        function populateHowToPlayModal() {
+            howToPlayBody.innerHTML = `
+                <p>الهدف بسيط: أن تكون أول فريق ينجح في تلوين <strong>خمسة دوائر</strong> بلونه في صف واحد (أفقي، عمودي، أو قطري).</p>
+
+                <h2>خطوات بدء اللعبة:</h2>
+                <ul>
+                    <li><strong>اختيار الفرق:</strong> يقوم مُقدّم اللعبة أولاً باختيار عدد الفرق المشاركة (من 2 إلى 5 فرق).</li>
+                    <li><strong>إدخال الأسماء:</strong> يتم إدخال اسم لكل فريق.</li>
+                    <li><strong>اختيار الألوان:</strong> يختار كل فريق لوناً فريداً يمثله في اللعبة.</li>
+                    <li><strong>بدء اللعب:</strong> يضغط المُقدّم على "ابدأ اللعبة".</li>
+                </ul>
+
+                <h2>طريقة اللعب:</h2>
+                <ul>
+                    <li><strong>الدور:</strong> تبدأ اللعبة ويظهر اسم الفريق الذي عليه الدور (الاسم في الأعلى سيضيء بلون الفريق).</li>
+                    <li><strong>اختيار الدائرة:</strong> يقوم الفريق باختيار رقم دائرة فارغة من اللوحة (من 1 إلى 81).</li>
+                    <li><strong>السؤال:</strong> بمجرد اختيار الدائرة، سيظهر سؤال مع 4 خيارات ومؤقت لمدة 45 ثانية.</li>
+                    <li><strong>الإجابة:</strong>
+                        <ul>
+                            <li><strong>إذا كانت الإجابة صحيحة:</strong> سيتم تلوين الدائرة بلون الفريق، وينتقل الدور للفريق التالي.</li>
+                            <li><strong>إذا كانت الإجابة خاطئة:</strong> يخسر الفريق دوره. (ملاحظة: هذا الخيار الخاطئ سيختفي إذا حاول فريق آخر الإجابة على نفس السؤال).</li>
+                            <li><strong>إذا انتهى الوقت:</strong> يخسر الفريق دوره، ويبقى السؤال بجميع خياراته متاحة.</li>
+                        </ul>
+                    </li>
+                    <li><strong>الفوز:</strong> يستمر اللعب بهذه الطريقة، فريقاً تلو الآخر، حتى يتمكن أحد الفرق من تكوين خط مستقيم من 5 دوائر ملونة بلونه.</li>
+                </ul>
+
+                <h2>أدوات مُقدّم اللعبة:</h2>
+                <ul>
+                    <li><strong>تغيير الدور:</strong> يمكنه اختيار دور أي فريق يدوياً في أي وقت.</li>
+                    <li><strong>تلوين يدوي:</strong> يمكنه تلوين دائرة لأي فريق (دون الحاجة لسؤال) كنوع من الجائزة أو المساعدة.</li>
+                    <li><strong>حذف اللون:</strong> يمكنه حذف لون من دائرة ملونة. عند حذف اللون، ستحصل هذه الدائرة على سؤال "جديد" وتصبح متاحة للعب مرة أخرى.</li>
+                </ul>
+                
+                <h2 style="text-align: center; border: none; margin-top: 2rem; font-size: 1.5rem;">استمتعوا باللعبة!</h2>
+            `;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             renderTeamSetup(parseInt(teamCountSelect.value));
+            populateHowToPlayModal(); // (جديد: ملء النافذة عند تحميل الصفحة)
         });
 
     </script>
